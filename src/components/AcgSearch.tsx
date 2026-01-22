@@ -30,7 +30,7 @@ interface AcgSearchProps {
   onError?: (error: string) => void;
 }
 
-type AcgSearchSource = 'acgrip' | 'mikan';
+type AcgSearchSource = 'acgrip' | 'mikan' | 'dmhy';
 
 export default function AcgSearch({
   keyword,
@@ -56,13 +56,19 @@ export default function AcgSearch({
   const performSearch = async (page: number, isLoadMore = false) => {
     if (isLoadingMoreRef.current) return;
     if (source === 'mikan' && page > 1) return;
+    if (source === 'dmhy' && page > 1) return;
 
     isLoadingMoreRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
-      const apiUrl = source === 'mikan' ? '/api/acg/mikan' : '/api/acg/acgrip';
+      const apiUrl =
+        source === 'mikan'
+          ? '/api/acg/mikan'
+          : source === 'dmhy'
+            ? '/api/acg/dmhy'
+            : '/api/acg/acgrip';
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -85,12 +91,12 @@ export default function AcgSearch({
         // 追加新数据
         setAllItems(prev => [...prev, ...data.items]);
         // 如果当前页没有结果，说明没有更多了
-        setHasMore(source === 'acgrip' && data.items.length > 0);
+        setHasMore(source !== 'mikan' && source !== 'dmhy' && data.items.length > 0);
       } else {
         // 新搜索，重置数据
         setAllItems(data.items);
         // 如果第一页有结果，假设可能还有更多
-        setHasMore(source === 'acgrip' && data.items.length > 0);
+        setHasMore(source !== 'mikan' && source !== 'dmhy' && data.items.length > 0);
       }
 
       setCurrentPage(page);
@@ -141,6 +147,7 @@ export default function AcgSearch({
   // 加载更多数据
   const loadMore = useCallback(() => {
     if (source === 'mikan') return;
+    if (source === 'dmhy') return;
     if (!loading && hasMore && !isLoadingMoreRef.current) {
       performSearch(currentPage + 1, true);
     }
@@ -332,7 +339,7 @@ export default function AcgSearch({
         </div>
 
         {/* 加载更多指示器 */}
-        {source === 'acgrip' && hasMore && (
+        {source !== 'mikan' && source !== 'dmhy' && hasMore && (
           <div ref={loadMoreRef} className='flex items-center justify-center py-8'>
             <div className='text-center'>
               <Loader2 className='mx-auto h-6 w-6 animate-spin text-green-600 dark:text-green-400' />
@@ -392,6 +399,7 @@ export default function AcgSearch({
           options={[
             { label: 'ACG.RIP', value: 'acgrip' },
             { label: '蜜柑', value: 'mikan' },
+            { label: '动漫花园', value: 'dmhy' },
           ]}
           active={source}
           onChange={(value) => setSource(value as AcgSearchSource)}
